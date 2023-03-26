@@ -1,8 +1,11 @@
+from matplotlib.colors import LogNorm
+import matplotlib.ticker as mticker
 from typing import Union, Optional
 import matplotlib.pyplot as plt
 from pydub import AudioSegment
 from scipy.io import wavfile
 import numpy as np
+import math
 import os
 
 
@@ -33,7 +36,7 @@ def convert_all_mp3_to_wav() -> None:
             sound.export(target_path, format='wav')
 
 
-def wav_to_waterfall_data(
+def wav_to_spec(
         path: Union[os.PathLike, str],
         min_t: float = 0,
         max_t: float = np.inf,
@@ -74,9 +77,94 @@ def wav_to_waterfall_data(
     return cropped_spec, cropped_freq, cropped_time
 
 
+def waterfall_plot(
+        path: Union[os.PathLike, str],
+        filename: str,
+        min_t: float = 0,
+        max_t: float = np.inf,
+        min_f: float = 0,
+        max_f: float = np.inf,
+        background_color: str = '#000000',
+        tick_color: str = '#FFFFFF',
+) -> None:
+    """
+    Convert a wav file to a plot
+    :param path: Path to wav file
+    :param filename: Plot filename in /plots/
+    :param min_t: Start t crop (sec)
+    :param max_t: Stop t crop (sec)
+    :param min_f: Start f crop (sec)
+    :param max_f: Stop f crop (sec)
+    :return: None
+    """
+
+    # Generate the spectrum data.
+    spec, freq, time = wav_to_spec(
+        path=path,
+        min_t=min_t,
+        max_t=max_t,
+        min_f=min_f,
+        max_f=max_f,
+    )
+
+    # Determine the extent
+    left = 0
+    right = time[-1] - time[0]
+    bottom = freq[0] / 1000
+    top = freq[-1] / 1000
+    print(f'top: {top}, bottom: {bottom}')
+    extent = (left, right, bottom, top)
+    norm = LogNorm(
+        vmin=spec.min(),
+        vmax=spec.max(),
+    )
+
+    # Make the plot.
+    figure: plt.Figure = plt.figure(
+        dpi=300,
+        figsize=(8, 3),
+        facecolor=background_color,
+    )
+    ax: plt.Axes = figure.add_subplot()
+
+    # Plot the data
+    ax.imshow(
+        X=spec,
+        extent=extent,
+        aspect='auto',
+        origin='lower',
+        cmap='viridis',
+        norm=norm,
+    )
+
+    # Determine the y ticks
+    y_ticks = np.arange(math.ceil(bottom), math.ceil(top))
+    print(y_ticks)
+
+    # Format
+    ax.set_yscale('log')
+    ax.set_xlabel('time (sec)')
+    ax.set_ylabel('frequency (kHz)')
+    ax.xaxis.label.set_color(tick_color)
+    ax.yaxis.label.set_color(tick_color)
+    ax.yaxis.set_minor_formatter(mticker.ScalarFormatter())
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(y_ticks)
+    ax.tick_params(which='both', colors=tick_color)
+    figure.subplots_adjust(
+        top=0.98,
+        right=0.98,
+        bottom=0.17,
+        left=0.07,
+    )
+
+    # Save
+    figure.savefig(f'plots/{filename}.png')
+
+
 if __name__ == '__main__':
     convert_all_mp3_to_wav()
-    b_spec, b_freq, b_time = wav_to_waterfall_data(
+    b_spec, b_freq, b_time = wav_to_spec(
         path='sources/wav/bird-song.wav',
         min_t=0.1,
         max_t=1,
