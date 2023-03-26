@@ -1,15 +1,17 @@
+from typing import Union, Optional, Tuple
 from matplotlib.colors import LogNorm
 import matplotlib.ticker as mticker
-from typing import Union, Optional
 import matplotlib.pyplot as plt
 from pydub import AudioSegment
 from scipy.io import wavfile
 from scipy import signal
+from tqdm import tqdm
 import numpy as np
 import logging
+import shutil
 import math
+import cv2
 import os
-
 
 def convert_all_mp3_to_wav() -> None:
     """
@@ -90,7 +92,7 @@ def wav_to_spec(
 
 
 def waterfall_plot(
-        path: Union[os.PathLike, str],
+        path: Union[os.PathLike, str, None],
         filename: str,
         min_t: float = 0,
         max_t: float = np.inf,
@@ -102,9 +104,9 @@ def waterfall_plot(
         exp: float = 0.3,
         yscale: str = 'log',
         cmap: str = 'inferno',
-        save: bool = True,
+        save_fig: bool = True,
         return_fig: bool = False,
-) -> Optional[plt.Figure]:
+) -> Union[Tuple[plt.Figure, plt.Axes], None]:
     """
     Convert a wav file to a plot
     :param path: Path to wav file
@@ -119,7 +121,7 @@ def waterfall_plot(
     :param exp: The exponent to scale the amplitude by
     :param yscale: The scale for the y-axis.
     :param cmap: Color scale for plot.
-    :param save: Should fig be saved.
+    :param save_fig: Should fig be saved.
     :param return_fig: Should fig be returned.
     :return: None
     """
@@ -179,6 +181,7 @@ def waterfall_plot(
     y_ticks = np.arange(math.ceil(bottom), math.ceil(top))
 
     # Format
+    ax.set_facecolor(background_color)
     ax.set_yscale(yscale)
     ax.set_xlabel('time (sec)')
     ax.set_ylabel('frequency (kHz)')
@@ -196,11 +199,104 @@ def waterfall_plot(
     )
 
     # Save
-    if save:
+    if save_fig:
         figure.savefig(f'plots/{filename}.png')
 
     if return_fig:
-        return figure
+        return figure, ax
+
+    plt.close(figure)
+
+
+def waterfall_animation(
+        fps: int = 25,
+        video_name: str = 'animation',
+        window_s: float = 5,
+        regenerate_frames: bool = True,
+        **kwargs,
+) -> None:
+
+    # Folder for frames
+    path = os.path.join(os.getcwd(), 'frames')
+
+    # Regenerate the png files.
+    if regenerate_frames:
+
+        # Clear the folder
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        os.mkdir(path)
+
+        # Make the figure
+        figure, ax = waterfall_plot(
+            **kwargs,
+        )
+
+        # Get the plot bounds
+        min_p, max_p = ax.get_xlim()
+
+        # Make ints
+        min_p = int(min_p)
+        max_p = int(max_p)
+
+        # Get an iterator for the center of the frame
+        n_frames = (max_p - min_p) * fps + 1
+        ts = np.linspace(min_p, max_p, n_frames)
+
+        # A place to store the paths
+        paths = []
+
+        # For each frame
+        for i, t in tqdm(enumerate(ts), total=len(ts)):
+
+            # Center the frame on the current time stamp
+            frame_min = t - window_s / 2
+            frame_max = t + window_s / 2
+            ax.set_xlim(frame_min, frame_max)
+
+            # Add vertical line
+            line = ax.axvline(
+                t,
+                lw=1,
+                c=(1, 1, 1, 0.5),
+            )
+
+            # Reformat the x-axis
+            ax.set_xticks([t - 1, t, t + 1])
+            ax.set_xticklabels(['-1', '0', '1'])
+
+            # Save
+            filepath = os.path.join(path, f'frame_{i:05}.png')
+            paths.append(filepath)
+            figure.savefig(filepath)
+
+            # Remove the line
+            line.remove()
+
+    # If not regenerating, get the paths of the images
+    else:
+        paths = [os.path.join(os.getcwd(), 'frames', fname) for fname in sorted(os.listdir(path)) if fname.endswith(".png")]
+
+    # If video folder doesn't exist, create it
+    if not os.path.exists('videos'):
+        os.mkdir('videos')
+
+    # Convert the frames into an mp4
+    first_frame = cv2.imread(paths[0])
+    height, width, layers = first_frame.shape
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
+    video = cv2.VideoWriter(
+        f'videos/{video_name}.avi',
+        fourcc,
+        fps=fps,
+        frameSize=(width, height),
+    )
+    cv2.VideoWriter()
+    for path in tqdm(paths, total=len(paths)):
+        video.write(cv2.imread(path))
+    cv2.destroyAllWindows()
+    video.release()
+
 
 
 if __name__ == '__main__':

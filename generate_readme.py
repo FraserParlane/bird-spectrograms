@@ -1,4 +1,4 @@
-from waterfall import convert_all_mp3_to_wav, wav_to_spec, waterfall_plot
+from waterfall import convert_all_mp3_to_wav, wav_to_spec, waterfall_plot, waterfall_animation
 import logging
 import os
 
@@ -45,9 +45,37 @@ def overtone_singing():
     )
 
 
+def overtone_singing_animation():
+
+    # Generate the spectrum data
+    path = os.path.join(os.getcwd(), 'sources', 'wav', 'overtone-singing.wav')
+    overtone_kwargs = {
+        'path': path,
+        'filename': 'overtone-singing',
+        # 'min_t': 30,
+        # 'max_t': 35,
+        'min_f': 0,
+        'max_f': 5000,
+        'window': 2 ** 12,
+        'exp': 0.1,
+        'yscale': 'linear',
+        'cmap': 'inferno',
+        'save_fig': False,
+        'return_fig': True,
+    }
+
+    waterfall_animation(**overtone_kwargs)
+
+    # Generate the spectrum data
+    overtone_kwargs['save_fig'] = True
+    overtone_kwargs['return_fig'] = False
+    # waterfall_plot(**overtone_kwargs)
+
+
 def generate_readme():
     # bird_song()
-    overtone_singing()
+    # overtone_singing()
+    overtone_singing_animation()
 
 
 if __name__ == '__main__':
