@@ -4,6 +4,7 @@ from typing import Union, Optional
 import matplotlib.pyplot as plt
 from pydub import AudioSegment
 from scipy.io import wavfile
+from scipy import signal
 import numpy as np
 import logging
 import math
@@ -42,7 +43,8 @@ def wav_to_spec(
         min_t: float = 0,
         max_t: float = np.inf,
         min_f: float = 0,
-        max_f: float = np.inf
+        max_f: float = np.inf,
+        window: int = 256,
 
 ) -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -52,6 +54,7 @@ def wav_to_spec(
     :param max_t: Stop t crop (sec)
     :param min_f: Start f crop (sec)
     :param max_f: Stop f crop (sec)
+    :param window: window of the FFT
     :return: spectrum (shape f x t), frequency (shape f), and time (shape t)
     """
 
@@ -62,7 +65,8 @@ def wav_to_spec(
     spec, freq, time, im = plt.specgram(
         x=signal_data[:, 0],
         Fs=sampling_frequency,
-        # NFFT=512,
+        window=signal.windows.bartlett(window),
+        NFFT=window,
     )
     plt.close()
 
@@ -94,7 +98,13 @@ def waterfall_plot(
         max_f: float = np.inf,
         background_color: str = '#000000',
         tick_color: str = '#FFFFFF',
-) -> None:
+        window: int = 256,
+        exp: float = 0.3,
+        yscale: str = 'log',
+        cmap: str = 'inferno',
+        save: bool = True,
+        return_fig: bool = False,
+) -> Optional[plt.Figure]:
     """
     Convert a wav file to a plot
     :param path: Path to wav file
@@ -105,6 +115,12 @@ def waterfall_plot(
     :param max_f: Stop f crop (sec)
     :param background_color: Color of plot background
     :param tick_color: Color of ticks
+    :param window: The window of the FFT
+    :param exp: The exponent to scale the amplitude by
+    :param yscale: The scale for the y-axis.
+    :param cmap: Color scale for plot.
+    :param save: Should fig be saved.
+    :param return_fig: Should fig be returned.
     :return: None
     """
 
@@ -115,6 +131,7 @@ def waterfall_plot(
         max_t=max_t,
         min_f=min_f,
         max_f=max_f,
+        window=window,
     )
 
     # Determine the extent
@@ -136,22 +153,33 @@ def waterfall_plot(
     )
     ax: plt.Axes = figure.add_subplot()
 
+    spec = spec ** exp
+
     # Plot the data
-    ax.imshow(
+    plot = ax.imshow(
         X=spec,
         extent=extent,
         aspect='auto',
         origin='lower',
-        cmap='viridis',
-        norm=norm,
-        # interpolation='gaussian',
+        cmap=cmap,
+        # norm=norm,
     )
+
+    # Add the color bar
+    cbar = figure.colorbar(
+        plot,
+        ax=ax,
+    )
+    cbar.set_label('Amplitude', color=tick_color)
+    cbar.ax.yaxis.set_tick_params(color=tick_color)
+    cbar.outline.set_edgecolor(background_color)
+    plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=tick_color)
 
     # Determine the y ticks
     y_ticks = np.arange(math.ceil(bottom), math.ceil(top))
 
     # Format
-    ax.set_yscale('log')
+    ax.set_yscale(yscale)
     ax.set_xlabel('time (sec)')
     ax.set_ylabel('frequency (kHz)')
     ax.xaxis.label.set_color(tick_color)
@@ -168,7 +196,11 @@ def waterfall_plot(
     )
 
     # Save
-    figure.savefig(f'plots/{filename}.png')
+    if save:
+        figure.savefig(f'plots/{filename}.png')
+
+    if return_fig:
+        return figure
 
 
 if __name__ == '__main__':
