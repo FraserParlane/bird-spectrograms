@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pydub import AudioSegment
 from scipy.io import wavfile
 import numpy as np
+import logging
 import math
 import os
 
@@ -61,6 +62,7 @@ def wav_to_spec(
     spec, freq, time, im = plt.specgram(
         x=signal_data[:, 0],
         Fs=sampling_frequency,
+        # NFFT=512,
     )
     plt.close()
 
@@ -72,6 +74,12 @@ def wav_to_spec(
     cropped_spec = spec[mask_f][:, mask_t]
     cropped_time = time[mask_t]
     cropped_freq = freq[mask_f]
+
+    # Log
+    logging.info(f'Freq res: {len(freq)}')
+    logging.info(f'Time res: {len(time)}')
+    logging.info(f'Cropped freq res: {len(cropped_freq)}')
+    logging.info(f'Cropped time res: {len(cropped_time)}')
 
     # Return the frequencies
     return cropped_spec, cropped_freq, cropped_time
@@ -95,6 +103,8 @@ def waterfall_plot(
     :param max_t: Stop t crop (sec)
     :param min_f: Start f crop (sec)
     :param max_f: Stop f crop (sec)
+    :param background_color: Color of plot background
+    :param tick_color: Color of ticks
     :return: None
     """
 
@@ -112,7 +122,6 @@ def waterfall_plot(
     right = time[-1] - time[0]
     bottom = freq[0] / 1000
     top = freq[-1] / 1000
-    print(f'top: {top}, bottom: {bottom}')
     extent = (left, right, bottom, top)
     norm = LogNorm(
         vmin=spec.min(),
@@ -135,11 +144,11 @@ def waterfall_plot(
         origin='lower',
         cmap='viridis',
         norm=norm,
+        # interpolation='gaussian',
     )
 
     # Determine the y ticks
     y_ticks = np.arange(math.ceil(bottom), math.ceil(top))
-    print(y_ticks)
 
     # Format
     ax.set_yscale('log')
