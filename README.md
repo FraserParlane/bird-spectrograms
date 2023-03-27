@@ -1,10 +1,7 @@
 # Bird songs and Fourier Transforms
 
-<p style="text-align: center; padding: 20px;">
-    <font size="4">
-        If a bird wrote down its song as sheet music, what would it look like?
-    </font>
-</p>
+If a bird wrote down its song as sheet music, what would it look like?
+
 <a href="https://youtu.be/BFwcstHAd04" target="_blank">
     <img src="readme/bird-video.png">
 </a>

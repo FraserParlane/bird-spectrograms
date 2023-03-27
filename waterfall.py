@@ -13,6 +13,7 @@ import math
 import cv2
 import os
 
+
 def convert_all_mp3_to_wav() -> None:
     """
     Convert all files in sources/mp3 to wav files in sources/wav.
@@ -50,7 +51,7 @@ def wav_to_spec(
 
 ) -> (np.ndarray, np.ndarray, np.ndarray):
     """
-    Convert a wav file to a spectrum
+    Convert a wav file to spectrum data.
     :param path: Path to wav file
     :param min_t: Start t crop (sec)
     :param max_t: Stop t crop (sec)
@@ -119,10 +120,10 @@ def waterfall_plot(
     :param tick_color: Color of ticks
     :param window: The window of the FFT
     :param exp: The exponent to scale the amplitude by
-    :param yscale: The scale for the y-axis.
-    :param cmap: Color scale for plot.
-    :param save_fig: Should fig be saved.
-    :param return_fig: Should fig be returned.
+    :param yscale: The scale for the y-axis
+    :param cmap: Color scale for plot
+    :param save_fig: Should fig be saved
+    :param return_fig: Should fig be returned
     :return: None
     """
 
@@ -216,6 +217,18 @@ def waterfall_animation(
         clear_frames: bool = True,
         **kwargs,
 ) -> None:
+    """
+    Create an animation of the waterfall data
+    :param fps: The frame rate of the video
+    :param video_name: The name of the video
+    :param window_s: The range of the x scale on the plot
+    :param regenerate_frames: Should the png frames be regenerated (true), or
+    pick up from where this function last left off (False)
+    :param clear_frames: Delete the contents of the Frames folder before
+    beginning
+    :param kwargs: Key-word arguments for the waterfall_plot() function.
+    :return: None
+    """
 
     # Folder for frames
     path = os.path.join(os.getcwd(), 'frames')
@@ -249,9 +262,6 @@ def waterfall_animation(
         n_frames = (max_p - min_p) * fps + 1
         ts = np.linspace(min_p, max_p, n_frames)
 
-        # A place to store the paths
-        paths = []
-
         # For each frame
         for i, t in tqdm(enumerate(ts), total=len(ts)):
 
@@ -280,44 +290,21 @@ def waterfall_animation(
             ax.set_xticklabels(tick_labels)
 
             # Save
-            paths.append(filepath)
             figure.savefig(filepath)
 
             # Remove the line
             line.remove()
 
-    # If not regenerating, get the paths of the images
-    else:
-        paths = [os.path.join(os.getcwd(), 'frames', fname) for fname in sorted(os.listdir(path)) if fname.endswith(".png")]
-
     # If video folder doesn't exist, create it
     if not os.path.exists('videos'):
         os.mkdir('videos')
 
-    # Convert the frames into an mp4
-    first_frame = cv2.imread(paths[0])
-    height, width, layers = first_frame.shape
-    fourcc = cv2.VideoWriter_fourcc(*'H264')
-    video = cv2.VideoWriter(
-        f'videos/{video_name}.avi',
-        fourcc,
-        fps=fps,
-        frameSize=(width, height),
-    )
-    cv2.VideoWriter()
-    for path in tqdm(paths, total=len(paths)):
-        video.write(cv2.imread(path))
-    cv2.destroyAllWindows()
-    video.release()
-
+    # Convert the frames into an mp4 file.
+    command = f"ffmpeg -framerate 25 -pattern_type glob -i 'frames/*.png'" \
+              f" -c:v libx264 -pix_fmt yuv420p videos/{video_name}.mp4"
+    os.system(command)
+    logging.info('Video encoding complete.')
 
 
 if __name__ == '__main__':
-    convert_all_mp3_to_wav()
-    b_spec, b_freq, b_time = wav_to_spec(
-        path='sources/wav/bird-song.wav',
-        min_t=0.1,
-        max_t=1,
-        min_f=1000,
-        max_f=10000,
-    )
+    pass
