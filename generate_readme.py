@@ -67,6 +67,7 @@ def overtone_singing_animation():
     waterfall_animation(
         **overtone_kwargs,
         clear_frames=False,
+        regenerate_frames=False,
         window_s=60,
         fps=12,
     )
