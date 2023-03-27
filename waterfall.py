@@ -213,6 +213,7 @@ def waterfall_animation(
         video_name: str = 'animation',
         window_s: float = 5,
         regenerate_frames: bool = True,
+        clear_frames: bool = True,
         **kwargs,
 ) -> None:
 
@@ -223,9 +224,10 @@ def waterfall_animation(
     if regenerate_frames:
 
         # Clear the folder
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.mkdir(path)
+        if clear_frames:
+            if os.path.exists(path):
+                shutil.rmtree(path)
+            os.mkdir(path)
 
         # Make the figure
         figure, ax = waterfall_plot(
@@ -249,6 +251,12 @@ def waterfall_animation(
         # For each frame
         for i, t in tqdm(enumerate(ts), total=len(ts)):
 
+            # Check for file
+            filepath = os.path.join(path, f'frame_{i:05}.png')
+            if not clear_frames:
+                if os.path.exists(filepath):
+                    continue
+
             # Center the frame on the current time stamp
             frame_min = t - window_s / 2
             frame_max = t + window_s / 2
@@ -258,15 +266,16 @@ def waterfall_animation(
             line = ax.axvline(
                 t,
                 lw=1,
-                c=(1, 1, 1, 0.5),
+                c='#000000',
             )
 
             # Reformat the x-axis
-            ax.set_xticks([t - 1, t, t + 1])
-            ax.set_xticklabels(['-1', '0', '1'])
+            tick_labels = np.array([-5, 0, 5])
+            tick_positions = tick_labels + t
+            ax.set_xticks(tick_positions)
+            ax.set_xticklabels(tick_labels)
 
             # Save
-            filepath = os.path.join(path, f'frame_{i:05}.png')
             paths.append(filepath)
             figure.savefig(filepath)
 

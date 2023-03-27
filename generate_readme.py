@@ -64,7 +64,12 @@ def overtone_singing_animation():
         'return_fig': True,
     }
 
-    waterfall_animation(**overtone_kwargs)
+    waterfall_animation(
+        **overtone_kwargs,
+        clear_frames=False,
+        window_s=60,
+        fps=12,
+    )
 
     # Generate the spectrum data
     overtone_kwargs['save_fig'] = True
