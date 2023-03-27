@@ -10,4 +10,6 @@ A spectrogram is a plot a spectrum's **amplitude** (as a color scale) as a funct
 
 Note that there is a trade-off between frequency and time resolution. A large temporal window results in high frequency resolution and low temporal resolution. The opposite is also true: a small temporal window results in low frequency resolution and high temporal resolution.
 
+Note that the units of amplitude are meaningless, as the colors have been scaled for improved visualization.  
+
 [//]: # ([![Watch the video]&#40;https://img.youtube.com/vi/sHFS9C0AFZ0/default.jpg&#41;]&#40;https://youtu.be/sHFS9C0AFZ0&#41;)
