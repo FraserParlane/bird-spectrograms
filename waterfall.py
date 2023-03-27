@@ -229,6 +229,10 @@ def waterfall_animation(
                 shutil.rmtree(path)
             os.mkdir(path)
 
+        # Enforce returning the figure object
+        kwargs['save_fig'] = False
+        kwargs['return_fig'] = True
+
         # Make the figure
         figure, ax = waterfall_plot(
             **kwargs,
@@ -252,7 +256,7 @@ def waterfall_animation(
         for i, t in tqdm(enumerate(ts), total=len(ts)):
 
             # Check for file
-            filepath = os.path.join(path, f'frame_{i:05}.png')
+            filepath = os.path.join(path, f'frame_{i:06}.png')
             if not clear_frames:
                 if os.path.exists(filepath):
                     continue
@@ -266,7 +270,7 @@ def waterfall_animation(
             line = ax.axvline(
                 t,
                 lw=1,
-                c='#000000',
+                c=(1, 1, 1, 0.5),
             )
 
             # Reformat the x-axis

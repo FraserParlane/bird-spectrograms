@@ -78,10 +78,41 @@ def overtone_singing_animation():
     # waterfall_plot(**overtone_kwargs)
 
 
+def bird_chorus():
+
+    # Generate the spectrum data
+    path = os.path.join(os.getcwd(), 'sources', 'wav', 'bird-chorus.wav')
+    bird_chorus_kwargs = {
+        'path': path,
+        'filename': 'bird-chorus',
+        'min_f': -1,
+        'max_f': 6010,
+        'window': 2 ** 11,
+        'exp': 0.2,
+        'yscale': 'linear',
+        'cmap': 'inferno',
+        'save_fig': True,
+        'return_fig': False,
+    }
+    waterfall_plot(**bird_chorus_kwargs)
+
+    bird_chorus_kwargs['save_fig'] = False
+    bird_chorus_kwargs['return_fig'] = True
+
+    waterfall_animation(
+        **bird_chorus_kwargs,
+        clear_frames=False,
+        window_s=10,
+        fps=25,
+    )
+
+
 def generate_readme():
+    convert_all_mp3_to_wav()
     # bird_song()
     # overtone_singing()
-    overtone_singing_animation()
+    # overtone_singing_animation()
+    bird_chorus()
 
 
 if __name__ == '__main__':
